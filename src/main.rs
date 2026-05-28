@@ -60,7 +60,7 @@ impl Tree
     }
   }
   
-  fn check_if_contains(&self, pth : PathBuf) -> bool
+  fn check_if_contains(&self, pth : &PathBuf) -> bool
   {
     match self.get_leaf(pth)
     {
@@ -69,7 +69,7 @@ impl Tree
     }
   }
   
-  fn get_leaf(&self, start : PathBuf) -> Option<Tree>
+  fn get_leaf(&self, start : &PathBuf) -> Option<Tree>
   {
     let mut current = self;
     let s = start.to_str();
@@ -88,13 +88,13 @@ impl Tree
     Some(current.clone())
   }
   
-  fn get_leaves_as_pathbuf(&self, start:PathBuf) -> Vec<PathBuf>
+  fn get_leaves_as_pathbuf(&self, start:&PathBuf) -> Vec<PathBuf>
   {
     let mut v =  Vec::new();
     
-    if self.check_if_contains(start.clone())
+    if self.check_if_contains(start)
     {
-      for i in self.get_leaf(start.clone()).unwrap().hm
+      for i in self.get_leaf(start).unwrap().hm
       {
         v.push(PathBuf::from(start.display().to_string() + "/" + i.0.as_str()));
       }
@@ -157,6 +157,64 @@ fn inode_deduplicator_single_path(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[
   }
   inode_hm
 }
+
+#[allow(dead_code)]
+fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
+{
+  let mut sum = 0;
+  let ct = t.get_leaf(start);
+  if ct.is_some()
+  {
+    let h = ct.unwrap().hm;
+    if h.is_empty()
+    {
+      return hm[start].len();
+    }
+    for i in &h
+    {
+      let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
+      sum += get_sizes_recursive(hm,t ,&current );
+    }
+  }
+  sum
+}
+
+fn get_sizes_recursive(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
+{
+  let inode_bin : &mut HashMap<[u64; 2], u64> = &mut HashMap::new();
+  get_sizes_recursive_inode_bin(hm,t ,start , inode_bin)
+}
+
+fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
+                                 t : &Tree,
+                                 start : &PathBuf,
+                                 inode_bin : &mut HashMap<[u64; 2], u64>) -> u64
+{
+  let mut sum = 0;
+  let ct = t.get_leaf(start);
+  if ct.is_some()
+  {
+    let h = ct.unwrap().hm;
+    if h.is_empty()
+    {
+      let mut len = 0;
+      let inode = [hm[start].dev(),hm[start].ino()];
+      if !inode_bin.contains_key(&inode)
+      {
+        len = hm[start].len();
+        inode_bin.insert(inode, len);
+      }
+      return len;
+    }
+    for i in &h
+    {
+      let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
+      sum += get_sizes_recursive_inode_bin(hm,t ,&current , inode_bin);
+    }
+  }
+  sum
+}
+
 
 #[allow(dead_code)]
 fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],Vec<PathBuf>>
@@ -240,17 +298,16 @@ fn main(){
   
     
   
-  println!("{}", a.check_if_contains(PathBuf::from("/home/wallmenis")));
+  println!("{}", a.check_if_contains(&PathBuf::from("/home/wallmenis")));
   
-  let v = a.get_leaves_as_pathbuf(PathBuf::from("/home/wallmenis"));
+  let v = a.get_leaves_as_pathbuf(&PathBuf::from("/home/wallmenis"));
+  
+  
   
   for i in &v
   {
     println!("{}", i.display());
-    if hm.contains_key(i)
-    {
-      println!("{}",hm[i].len());
-    }
+    println!("{}",get_sizes_recursive(&hm,a ,i)/(1024*1024));
   }
   
   
