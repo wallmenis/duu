@@ -33,16 +33,19 @@ impl Tree
   
   fn make_tree_from_path(t : &mut Tree, pth : &PathBuf)
   {
-    let s = pth.to_str();
-    let p : Vec<_> = s.unwrap().split('/').collect();
+    let s = pth.display().to_string();
+    let p : Vec<_> = s.split('/').collect();
     let mut current = t;
+    //let new = &mut Tree::new();
     for i in &p
     {
       if !current.hm.contains_key(*i)
       {
         current.hm.insert(i.to_string(),Tree::new());
       }
-      current = current.get_mut_tree(i.to_string()).unwrap();
+      current = current.get_mut_tree(i.to_string()).unwrap(); // It is not likely to break. I think there is a more efficient way to do the creation.
+      //current = current.get_mut_tree(i.to_string()).unwrap_or(new);
+      
     }
   }
   #[allow(dead_code)]
@@ -72,8 +75,8 @@ impl Tree
   fn get_leaf(&self, start : &PathBuf) -> Option<Tree>
   {
     let mut current = self;
-    let s = start.to_str();
-    let p : Vec<_> = s.unwrap().split('/').collect();
+    let s = start.display().to_string();
+    let p : Vec<_> = s.split('/').collect();
     
     for i in &p
     {
@@ -90,13 +93,14 @@ impl Tree
   
   fn get_leaves_as_pathbuf(&self, start:&PathBuf) -> Vec<PathBuf>
   {
-    let mut v =  Vec::new();
+    let mut v = Vec::new();
     
     if self.check_if_contains(start)
     {
-      for i in self.get_leaf(start).unwrap().hm
+      for i in self.get_leaf(start).unwrap().hm     //already checked before
       {
-        v.push(PathBuf::from(start.display().to_string() + "/" + i.0.as_str()));
+        //v.push(PathBuf::from(start.display().to_string() + "/" + i.0.as_str()));
+        v.push(start.join(i.0));
       }
     }
     v
@@ -106,21 +110,28 @@ impl Tree
 
 fn get_ult_parent(pth : &PathBuf) -> PathBuf
 {
-  let mut f = std::fs::metadata(pth).unwrap();
-  let d = f.dev();
+  
   let mut now : PathBuf = pth.clone();
   let mut prev : PathBuf = pth.clone();
-  
-  while f.dev() == d && prev != PathBuf::from("/")
+  match std::fs::metadata(pth)
   {
-    prev = now.clone();
-    now = match now.parent(){
+    Ok(o) =>{
+    let d = o.dev();
+    let mut f = o;
+      while f.dev() == d && prev != PathBuf::from("/")
+      {
+        prev = now.clone();
+        now = match now.parent(){
           Some(o) => o,
           None => Path::new("/")
         }
         .to_path_buf();
-    f = std::fs::metadata(&now).unwrap();
+        f = std::fs::metadata(&now).unwrap(); //unlikely to error since it should have permissions
+      }
+    }
+    Err(e) => {eprintln!("In get_ult_parent: {}",e);}
   }
+  
   
   prev.clone()
 }
@@ -132,9 +143,13 @@ fn walker(p : PathBuf) -> HashMap<PathBuf, Metadata>
   let final_walk = walk.into_iter().filter_map(|pth| pth.ok());
   
   for pth in final_walk{
+    if pth.path_is_symlink() {
+      continue;
+    }
     let f = match std::fs::metadata(&pth.path()){
       Ok(fle) => fle,
-      Err(_) =>{
+      Err(e) =>{
+        eprintln!("In walker: {} {}",e, &pth.path().display());
         continue
       }
     };
@@ -165,15 +180,16 @@ fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree, sta
   let ct = t.get_leaf(start);
   if ct.is_some()
   {
-    let h = ct.unwrap().hm;
+    let h = ct.unwrap().hm;   //is checked before
     if h.is_empty()
     {
       return hm[start].len();
     }
     for i in &h
     {
-      let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
-      sum += get_sizes_recursive(hm,t ,&current );
+      //let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
+      let current = start.join(i.0);
+      sum += get_sizes_recursive_no_dedup(hm,t ,&current );
     }
   }
   sum
@@ -194,7 +210,7 @@ fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
   let ct = t.get_leaf(start);
   if ct.is_some()
   {
-    let h = ct.unwrap().hm;
+    let h = ct.unwrap().hm;     //is also checked before
     if h.is_empty()
     {
       let mut len = 0;
@@ -208,7 +224,8 @@ fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
     }
     for i in &h
     {
-      let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
+      // let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
+      let current = start.join(i.0);
       sum += get_sizes_recursive_inode_bin(hm,t ,&current , inode_bin);
     }
   }
@@ -224,7 +241,7 @@ fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],Vec<
     let inode = [i.1.dev(),i.1.ino()];
     let path = i.0.clone();
     let mut ino : Vec<PathBuf> = Vec::new();
-    if inode_hm.contains_key(&[i.1.dev(),i.1.ino()])
+    if inode_hm.contains_key(&inode)
     {
       ino = inode_hm[&inode].clone();
     }
