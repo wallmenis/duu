@@ -126,13 +126,18 @@ fn get_ult_parent(pth : &PathBuf) -> PathBuf
           None => Path::new("/")
         }
         .to_path_buf();
-        f = std::fs::metadata(&now).unwrap(); //unlikely to error since it should have permissions
+        f = match std::fs::metadata(&now){
+          Ok(out) => out,
+          Err(e) => {
+            eprintln!("In get_ult_parent while digging: {}",e);
+            prev = pth.clone();
+            break
+          }
+        };
       }
     }
     Err(e) => {eprintln!("In get_ult_parent: {}",e);}
   }
-  
-  
   prev.clone()
 }
 
@@ -240,13 +245,15 @@ fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],Vec<
   for i in hm{
     let inode = [i.1.dev(),i.1.ino()];
     let path = i.0.clone();
-    let mut ino : Vec<PathBuf> = Vec::new();
-    if inode_hm.contains_key(&inode)
-    {
-      ino = inode_hm[&inode].clone();
-    }
-    ino.push(path);
-    inode_hm.insert(inode,ino);
+    // let mut ino : Vec<PathBuf> = Vec::new();
+    // if inode_hm.contains_key(&inode)
+    // {
+    //   ino = inode_hm[&inode].clone();
+    // }
+    // ino.push(path);
+    // inode_hm.insert(inode,ino);
+    
+    inode_hm.entry(inode).or_insert(Vec::new()).push(path);
   }
   inode_hm
 }
