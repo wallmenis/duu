@@ -10,9 +10,9 @@ use sysinfo::Disks;
 
 
 mod tree;
-mod funcs;
+mod utils;
 use tree::Tree;
-use funcs::*;
+use utils::*;
 
 
 
