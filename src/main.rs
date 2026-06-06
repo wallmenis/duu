@@ -11,6 +11,7 @@ use sysinfo::Disks;
 
 mod tree;
 mod utils;
+mod jsoning;
 use tree::Tree;
 use utils::*;
 
@@ -31,7 +32,7 @@ fn main(){
   
   for i in &hm
   {
-    Tree::make_tree_from_path(a, i.0); 
+    Tree::make_tree_from_path(a, i.0, i.1.len()); 
   }
   println!("Finished indexng the files");
 
@@ -89,5 +90,5 @@ fn main(){
     //println!("{} {}",(i.usage().read_bytes)/(1024*1024),i.total_space()/(1024*1024));
     println!("{} {}",(i.total_space() - i.available_space())/(1024*1024),i.total_space()/(1024*1024));
   }
-  
+  a.print();
 }
