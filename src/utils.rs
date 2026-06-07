@@ -93,7 +93,7 @@ pub fn inode_deduplicator_single_path(hm : &HashMap<PathBuf, Metadata>) -> HashM
 pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
     let mut sum = 0;
-    let ct = t.get_leaf(start);
+    let ct = t.get_child(start);
     if ct.is_some()
     {
         let h = ct.unwrap().hm;   //is checked before
@@ -123,7 +123,7 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
                                  inode_bin : &mut HashMap<[u64; 2], u64>) -> u64
 {
     let mut sum = 0;
-    let ct = t.get_leaf(start);
+    let ct = t.get_child(start);
     if ct.is_some()
     {
         let h = ct.unwrap().hm;     //is also checked before

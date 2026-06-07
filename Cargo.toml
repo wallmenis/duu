@@ -9,5 +9,5 @@ serde_json = "*"
 # nix = {version = "*" , features = ["fs"]}
 # zbus = "*"
 jwalk = "*"
-clap = "*"
+clap = {version = "*", features = ["derive"]}
 sysinfo = "*"

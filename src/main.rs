@@ -8,12 +8,15 @@ use std::{collections::HashMap, path::PathBuf};
 
 use sysinfo::Disks;
 
-
+mod flatpak;
+mod arguments;
 mod tree;
 mod utils;
 mod jsoning;
 use tree::Tree;
 use utils::*;
+
+use crate::flatpak::FlatpakDir;
 
 
 
@@ -73,7 +76,7 @@ fn main(){
   
   println!("{}", a.check_if_contains(&PathBuf::from("/home/wallmenis")));
   
-  let v = a.get_leaves_as_pathbuf(&PathBuf::from("/home/wallmenis"));
+  let v = a.get_children_as_pathbuf(&PathBuf::from("/home/wallmenis"));
   
   
   
@@ -83,6 +86,11 @@ fn main(){
     println!("{}",get_sizes_recursive(&hm,a ,i)/(1024*1024));
   }
   
+  let mut f = FlatpakDir::new();
+  
+  f.find_sizes_with_tree_and_hm(&hm ,a );
+  
+  f.print();
   
   println!("----------");
   for i in &Disks::new_with_refreshed_list()
@@ -90,5 +98,5 @@ fn main(){
     //println!("{} {}",(i.usage().read_bytes)/(1024*1024),i.total_space()/(1024*1024));
     println!("{} {}",(i.total_space() - i.available_space())/(1024*1024),i.total_space()/(1024*1024));
   }
-  a.print();
+  //a.print();
 }
