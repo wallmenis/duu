@@ -93,17 +93,16 @@ pub fn inode_deduplicator_single_path(hm : &HashMap<PathBuf, Metadata>) -> HashM
 pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
     let mut sum = 0;
-    let ct = t.get_child(start);
+    let ct = t.get_child_ref(start);
     if ct.is_some()
     {
-        let h = ct.unwrap().hm;   //is checked before
+        let h = &ct.unwrap().hm;   //is checked before
         if h.is_empty()
         {
             return hm[start].len();
         }
-        for i in &h
+        for i in h
         {
-            //let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
             let current = start.join(i.0);
             sum += get_sizes_recursive_no_dedup(hm,t ,&current );
         }
@@ -123,10 +122,10 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
                                  inode_bin : &mut HashMap<[u64; 2], u64>) -> u64
 {
     let mut sum = 0;
-    let ct = t.get_child(start);
+    let ct = t.get_child_ref(start);
     if ct.is_some()
     {
-        let h = ct.unwrap().hm;     //is also checked before
+        let h = &ct.unwrap().hm;     //is also checked before
         if h.is_empty()
         {
             let mut len = 0;
@@ -138,16 +137,35 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
             }
             return len;
         }
-        for i in &h
+        for i in h
         {
-            // let current = PathBuf::from( start.display().to_string()+ "/" + i.0);
             let current = start.join(i.0);
             sum += get_sizes_recursive_inode_bin(hm,t ,&current , inode_bin);
         }
     }
     sum
 }
-                                 
+
+pub fn get_parent_dirs(p : &PathBuf) -> Vec<PathBuf>
+{
+    let mut v = Vec::new();
+    let mut pth = Some(p.as_path());
+    while pth != None && pth != Some(Path::new(""))
+    {
+        //println!("{}", pth.unwrap().display());
+        v.push(PathBuf::from(
+            match pth
+            {
+                Some(o) => o,
+                None => Path::new("")
+            }
+            
+        ));
+        pth = pth.unwrap_or(Path::new("")).parent();
+    }
+    v
+}
+
 #[allow(dead_code)]
 pub fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],Vec<PathBuf>>
 {

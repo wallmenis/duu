@@ -1,11 +1,5 @@
-
-// use serde::Deserialize;
-// use std::io::{BufReader, Read};
-
-//use std::os::unix::net::UnixStream;
-
 use std::{collections::HashMap, path::PathBuf};
-
+use clap::Parser;
 use sysinfo::Disks;
 
 mod flatpak;
@@ -13,17 +7,30 @@ mod arguments;
 mod tree;
 mod utils;
 mod jsoning;
+
 use tree::Tree;
 use utils::*;
-
-use crate::flatpak::FlatpakDir;
-
+use flatpak::FlatpakDir;
+use arguments::Ar;
 
 
 
 fn main(){
   
-  let hm = walker(&PathBuf::from("/"), Some(true));
+  let args = Ar::parse();
+  
+  let s_path = PathBuf::from(args.path);
+  let sup_path = match s_path.canonicalize()
+  {
+    Ok(o) => o,
+    Err(e) =>
+    {
+      eprint!("{}",e);
+      std::process::exit(1);
+    }
+  };
+  
+  let hm = walker(&sup_path, Some(true));
   let inode_size = inode_sizes(&hm);
   
   
@@ -33,11 +40,13 @@ fn main(){
   
   let a = &mut Tree::new();
   
-  for i in &hm
-  {
-    Tree::make_tree_from_path(a, i.0, i.1.len()); 
-  }
+  a.build_from_hash_map_only_leaf(&hm);
+  
   println!("Finished indexng the files");
+  
+  //a.build_from_hash_map(&hm);
+  
+  //println!("Finished indexng the files");
 
   let mut dev_mnt : HashMap<u64,PathBuf> = HashMap::new();
   
@@ -72,12 +81,9 @@ fn main(){
   println!("----------");
   
   
-    
-  
   println!("{}", a.check_if_contains(&PathBuf::from("/home/wallmenis")));
   
   let v = a.get_children_as_pathbuf(&PathBuf::from("/home/wallmenis"));
-  
   
   
   for i in &v
@@ -95,7 +101,6 @@ fn main(){
   println!("----------");
   for i in &Disks::new_with_refreshed_list()
   {
-    //println!("{} {}",(i.usage().read_bytes)/(1024*1024),i.total_space()/(1024*1024));
     println!("{} {}",(i.total_space() - i.available_space())/(1024*1024),i.total_space()/(1024*1024));
   }
   //a.print();

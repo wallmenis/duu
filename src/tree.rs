@@ -1,5 +1,8 @@
-use std::{collections::HashMap, path::{PathBuf}};
+use std::{collections::{HashMap, HashSet}, fs::Metadata, path::PathBuf};
+use std::sync::Mutex;
 use serde::{Serialize, Deserialize};
+
+use crate::utils::{get_parent_dirs, get_sizes_recursive};
 
 #[derive(Clone,Serialize,Deserialize)]
 pub struct Tree{
@@ -25,13 +28,10 @@ impl Tree
         return ret;
     }
     
-    pub fn make_tree_from_path(t : &mut Tree, pth : &PathBuf, l : u64)
+    pub fn make_tree_from_path(&mut self, pth : &PathBuf, l : u64)
     {
         let c : Vec<_> = pth.components().collect();
-        //let s = pth.display().to_string();
-        //let p : Vec<_> = s.split('/').collect();
-        let mut current = t;
-        //let new = &mut Tree::new();
+        let mut current = self;
         for i in &c
         {
             let k = i.as_os_str().to_os_string().display().to_string(); // I know this is cursed but bare with me here!
@@ -40,14 +40,13 @@ impl Tree
                 current.hm.insert(k.clone(),Tree::new());
             }
             current = current.get_mut_tree(&k).expect("I don't know how this happened!"); // It is not likely to break. I think there is a more efficient way to do the creation.
-            //current = current.get_mut_tree(i.to_string()).unwrap_or(new);
         }
         current.size = l;
     }
     
     pub fn check_if_contains(&self, pth : &PathBuf) -> bool
     {
-        self.get_child(pth).is_some()
+        self.get_child_ref(pth).is_some()
     }
     
     pub fn get_child(&self, start : &PathBuf) -> Option<Tree>
@@ -71,6 +70,44 @@ impl Tree
         Some(current.clone())
     }
     
+    pub fn get_child_ref(&self, start : &PathBuf) -> Option<&Tree>
+    {
+        let mut current = self;
+        let c : Vec<_> = start.components().collect();
+        
+        for i in &c
+        {
+            let k = i.as_os_str().to_os_string().display().to_string();
+            if current.hm.contains_key(&k)
+            {
+                current = &current.hm[&k];
+            }
+            else {
+                return None;
+            }
+        }
+        Some(current)
+    }
+    
+    pub fn get_child_mut_ref(&mut self, start : &PathBuf) -> Option<&mut Tree>
+    {
+        let mut current = self;
+        let c : Vec<_> = start.components().collect();
+        
+        for i in &c
+        {
+            let k = i.as_os_str().to_os_string().display().to_string();
+            if current.hm.contains_key(&k)
+            {
+                current = current.get_mut_tree(&k).expect("Already checked");
+            }
+            else {
+                return None;
+            }
+        }
+        Some(current)
+    }
+    
     pub fn get_children_as_pathbuf(&self, start:&PathBuf) -> Vec<PathBuf>
     {
         let mut v = Vec::new();
@@ -79,11 +116,55 @@ impl Tree
         {
             for i in self.get_child(start).expect("I don't know how this crashed, it is already checked!!!").hm     //already checked before
             {
-                //v.push(PathBuf::from(start.display().to_string() + "/" + i.0.as_str()));
                 v.push(start.join(i.0));
             }
         }
         v
+    }
+    
+    pub fn build_from_hash_map(&mut self, hm : &HashMap<PathBuf,Metadata>)
+    {
+        // Need to make multithreaded for performance
+//         let mut mhs : Mutex<HashSet<PathBuf>>= Mutex::new(HashSet::new());
+//         for i in hm
+//         {
+//             std::thread::spawn(move || {
+//                     self.make_tree_from_path(i.0,i.1.len() );
+//                     let paths = get_parent_dirs(i.0);
+//                     for j in &paths
+//                     {
+//                         let &mut hs = mhs.lock().expect("Heck");
+//                         if !hs.contains(j)
+//                         {
+//                             hs.insert(j.clone());
+//                             self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
+//                         }
+//                     }
+//                 });
+//             
+//         }
+        let mut hs : HashSet<PathBuf>= HashSet::new();
+        for i in hm
+        {
+            self.make_tree_from_path(i.0,i.1.len() );
+            let paths = get_parent_dirs(i.0);
+            for j in &paths
+            {
+                if !hs.contains(j)
+                {
+                    hs.insert(j.clone());
+                    self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
+                }
+            }
+        }
+    }
+    
+    pub fn build_from_hash_map_only_leaf(&mut self, hm : &HashMap<PathBuf,Metadata>)
+    {
+        for i in hm
+        {
+            self.make_tree_from_path(i.0,i.1.len() );
+        }
     }
     
 }

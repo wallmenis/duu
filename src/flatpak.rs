@@ -29,10 +29,7 @@ impl FlatpakDir
     {
         let hm = walker(&self.path, Some(true) );
         let t = &mut Tree::new();
-        for i in &hm
-        {
-            Tree::make_tree_from_path(t, i.0, i.1.len() );
-        }
+        t.build_from_hash_map_only_leaf(&hm);
         self.find_sizes_with_tree_and_hm(&hm , t);
     }
     
