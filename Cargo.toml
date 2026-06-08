@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 serde = {version = "*", features = ["derive"]}
 serde_json = "*"
-# nix = {version = "*" , features = ["fs"]}
+nix = {version = "*" , features = ["user"]}
 # zbus = "*"
 jwalk = "*"
 clap = {version = "*", features = ["derive"]}

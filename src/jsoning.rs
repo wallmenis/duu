@@ -2,7 +2,7 @@ use crate::{flatpak::FlatpakDir, tree::Tree};
 
 impl Tree
 {
-    pub fn print(&self)
+    pub fn print_json(&self)
     {
         let str_out =  match serde_json::to_string_pretty(self)
         {
@@ -24,7 +24,7 @@ impl Tree
 
 impl FlatpakDir
 {
-    pub fn print(&self)
+    pub fn print_json(&self)
     {
         let str_out =  match serde_json::to_string_pretty(self)
         {

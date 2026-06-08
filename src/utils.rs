@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::Metadata, os::unix::fs::MetadataExt, path::{PathBuf, Path}};
+use std::{collections::{HashMap, HashSet}, fs::Metadata, os::unix::fs::MetadataExt, path::{Path, PathBuf}};
 
 use jwalk::WalkDir;
 
@@ -112,14 +112,14 @@ pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree,
 
 pub fn get_sizes_recursive(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
-    let inode_bin : &mut HashMap<[u64; 2], u64> = &mut HashMap::new();
+    let inode_bin : &mut HashSet<[u64; 2]> = &mut HashSet::new();
     get_sizes_recursive_inode_bin(hm,t ,start , inode_bin)
 }
 
 pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
                                  t : &Tree,
                                  start : &PathBuf,
-                                 inode_bin : &mut HashMap<[u64; 2], u64>) -> u64
+                                 inode_bin : &mut HashSet<[u64; 2]>) -> u64
 {
     let mut sum = 0;
     let ct = t.get_child_ref(start);
@@ -130,10 +130,10 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
         {
             let mut len = 0;
             let inode = [hm[start].dev(),hm[start].ino()];
-            if !inode_bin.contains_key(&inode)
+            if !inode_bin.contains(&inode)
             {
                 len = hm[start].len();
-                inode_bin.insert(inode, len);
+                inode_bin.insert(inode);
             }
             return len;
         }

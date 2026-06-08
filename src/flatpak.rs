@@ -53,4 +53,22 @@ impl FlatpakDir
         }
        
     }
+    
+    pub fn print(&self, size_div : u64)
+    {
+        println!("------------------------");
+        println!("Flatpak directory type : {}", self.label);
+        println!("Flatpak directory path : {}", self.path.display());
+        println!("Apps :");
+        for i in &self.apps
+        {
+            println!("\t{} : {}", i.0, i.1/size_div);
+        }
+        println!("Runtimes :");
+        for i in &self.runtimes
+        {
+            println!("\t{} : {}", i.0, i.1/size_div);
+        }
+        println!("------------------------")
+    }
 }
