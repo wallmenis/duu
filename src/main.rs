@@ -31,9 +31,7 @@ fn main(){
     }
   };
   
-  let e_siz = string_to_data_size(&args.size);
-  
-  let siz = e_siz as u64;
+  let siz = string_to_data_size(&args.size).value();
   
   let hm = walker(&sup_path, Some(true));
   
@@ -136,5 +134,5 @@ fn main(){
     }
     
   }
-  //a.print();
+  //a.print_json();
 }

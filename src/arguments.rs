@@ -24,6 +24,14 @@ pub enum DataSizes {
     GB = 1024*1024*1024
 }
 
+impl DataSizes
+{
+    pub fn value(self) -> u64
+    {
+        self as u64
+    }
+}
+
 pub fn string_to_data_size(s : &String) -> DataSizes
 {
     if s.to_uppercase() == "KB".to_string()

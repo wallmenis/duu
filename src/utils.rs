@@ -114,6 +114,7 @@ pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree,
 
 pub fn get_sizes_recursive(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
+    //println!("pth:{}", start.display());
     let inode_bin : &mut HashSet<[u64; 2]> = &mut HashSet::new();
     get_sizes_recursive_inode_bin(hm,t ,start , inode_bin)
 }
@@ -148,23 +149,31 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
     sum
 }
 
-pub fn get_parent_dirs(p : &PathBuf) -> Vec<PathBuf>
+pub fn get_parent_dirs(p : &PathBuf) -> HashSet<PathBuf>
 {
-    let mut v = Vec::new();
-    let mut pth = Some(p.as_path());
-    while pth != None && pth != Some(Path::new(""))
+    let mut v = HashSet::new();
+//     let mut pth = Some(p.as_path());
+//     while pth != None && pth != Some(Path::new(""))
+//     {
+//         //println!("{}", pth.unwrap().display());
+//         v.push(PathBuf::from(
+//             match pth
+//             {
+//                 Some(o) => o,
+//                 None => Path::new("")
+//             }
+//             
+//         ));
+//         pth = pth.unwrap_or(Path::new("")).parent();
+//     }
+    let mut pth = PathBuf::from("/");
+    for i in p.components()
     {
-        //println!("{}", pth.unwrap().display());
-        v.push(PathBuf::from(
-            match pth
-            {
-                Some(o) => o,
-                None => Path::new("")
-            }
-            
-        ));
-        pth = pth.unwrap_or(Path::new("")).parent();
+        pth=pth.join(i);
+        v.insert(pth.clone());
+        //println!("vibe:{}",pth.display());
     }
+    
     v
 }
 

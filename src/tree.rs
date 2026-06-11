@@ -144,20 +144,19 @@ impl Tree
 //             
 //         }
         
-        
+        //println!("\tmaking leaves");
+        self.build_from_hash_map_only_leaf(hm);
         let mut hs : HashSet<PathBuf>= HashSet::new();
+        //println!("\tmarking paths");
         for i in hm
         {
-            self.make_tree_from_path(i.0,i.1.len() );
-            let paths = get_parent_dirs(i.0);
-            for j in &paths
-            {
-                if !hs.contains(j)
-                {
-                    hs.insert(j.clone());
-                    self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
-                }
-            }
+            let paths : HashSet<PathBuf> = get_parent_dirs(i.0);
+            hs.extend(paths);
+        }
+        println!("\tmarking sizes");
+        for j in &hs
+        {
+            self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
         }
     }
     
