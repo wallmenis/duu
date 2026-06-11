@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, fs::Metadata, os::unix::fs::MetadataExt};
+use std::{collections::HashMap, path::PathBuf, fs::Metadata};
 
 use serde::Serialize;
 
@@ -69,6 +69,5 @@ impl FlatpakDir
         {
             println!("\t{} : {}", i.0, i.1/size_div);
         }
-        println!("------------------------")
     }
 }

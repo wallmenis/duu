@@ -6,7 +6,7 @@ pub struct Ar
     #[arg(default_value=".")]
     pub path : String,
     
-    #[arg(short,long,default_value="MB")]
+    #[arg(short,long,default_value="KB")]
     pub size : String,
     
     #[arg(short, long)]

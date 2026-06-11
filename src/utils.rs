@@ -7,33 +7,35 @@ use crate::tree::Tree;
 
 pub fn get_ult_parent(pth : &PathBuf) -> PathBuf
 {
-    
     let mut now : PathBuf = pth.clone();
     let mut prev : PathBuf = pth.clone();
-    match std::fs::metadata(pth)
+    if !pth.is_symlink()
     {
-        Ok(o) =>{
-            let d = o.dev();
-            let mut f = o;
-            while f.dev() == d && prev != PathBuf::from("/")
-            {
-                prev = now.clone();
-                now = match now.parent(){
-                    Some(o) => o,
-                    None => Path::new("/")
-                }
-                .to_path_buf();
-                f = match std::fs::metadata(&now){
-                    Ok(out) => out,
-                    Err(e) => {
-                        eprintln!("In get_ult_parent while digging: {}",e);
-                        prev = pth.clone();
-                        break
+        match std::fs::metadata(pth)
+        {
+            Ok(o) =>{
+                let d = o.dev();
+                let mut f = o;
+                while f.dev() == d && prev != PathBuf::from("/")
+                {
+                    prev = now.clone();
+                    now = match now.parent(){
+                        Some(o) => o,
+                        None => Path::new("/")
                     }
-                };
+                    .to_path_buf();
+                    f = match std::fs::metadata(&now){
+                        Ok(out) => out,
+                        Err(e) => {
+                            eprintln!("In get_ult_parent while digging: {}",e);
+                            prev = pth.clone();
+                            break
+                        }
+                    };
+                }
             }
+            Err(e) => {eprintln!("In get_ult_parent: {}",e);}
         }
-        Err(e) => {eprintln!("In get_ult_parent: {}",e);}
     }
     prev.clone()
 }

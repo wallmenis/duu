@@ -1,5 +1,5 @@
 use std::{collections::{HashMap, HashSet}, fs::Metadata, path::PathBuf};
-use std::sync::Mutex;
+//use std::sync::{Mutex,Arc};
 use serde::{Serialize, Deserialize};
 
 use crate::utils::{get_parent_dirs, get_sizes_recursive};
@@ -53,8 +53,6 @@ impl Tree
     {
         let mut current = self;
         let c : Vec<_> = start.components().collect();
-        // let s = start.display().to_string();
-        // let p : Vec<_> = s.split('/').collect();
         
         for i in &c
         {
@@ -122,27 +120,31 @@ impl Tree
         v
     }
     
+    //pub fn build_from_hash_map(&mut self, hm : &HashMap<PathBuf,Metadata>)
     pub fn build_from_hash_map(&mut self, hm : &HashMap<PathBuf,Metadata>)
     {
         // Need to make multithreaded for performance
-//         let mut mhs : Mutex<HashSet<PathBuf>>= Mutex::new(HashSet::new());
+//         let mhs : Arc<Mutex<HashSet<PathBuf>>>= Arc::new(Mutex::new(HashSet::new()));
 //         for i in hm
 //         {
-//             std::thread::spawn(move || {
-//                     self.make_tree_from_path(i.0,i.1.len() );
-//                     let paths = get_parent_dirs(i.0);
+//             self.make_tree_from_path(i.0,i.1.len() );
+//             let pb = i.0.clone();
+//             let mt = i.1.clone();
+//             std::thread::spawn( || {
+//                 let paths = get_parent_dirs(pb);
 //                     for j in &paths
 //                     {
-//                         let &mut hs = mhs.lock().expect("Heck");
-//                         if !hs.contains(j)
+//                         if !mhs.lock().unwrap().contains(j)
 //                         {
-//                             hs.insert(j.clone());
+//                             mhs.insert(j.clone());
 //                             self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
 //                         }
 //                     }
 //                 });
 //             
 //         }
+        
+        
         let mut hs : HashSet<PathBuf>= HashSet::new();
         for i in hm
         {

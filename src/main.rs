@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, os::unix::fs::MetadataExt, path::PathBuf};
 use clap::Parser;
-use sysinfo::Disks;
+//use sysinfo::Disks;
 use nix::unistd::{getuid, User};
 
 mod flatpak;
@@ -36,68 +36,15 @@ fn main(){
   let siz = e_siz as u64;
   
   let hm = walker(&sup_path, Some(true));
-  //let inode_size = inode_sizes(&hm);
-  
-  
   
   println!("Finished parsing the files");
- // let inode_hm = inode_deduplicator_single_path(&hm);
   
   let a = &mut Tree::new();
   
-  a.build_from_hash_map_only_leaf(&hm);
+  //a.build_from_hash_map_only_leaf(&hm);
+  a.build_from_hash_map(&hm);
   
   println!("Finished indexng the files");
-  
-  //a.build_from_hash_map(&hm);
-  
-  //println!("Finished indexng the files");
-
-//   let mut dev_mnt : HashMap<u64,PathBuf> = HashMap::new();
-//   
-//   let mut sum_per_dev : HashMap<u64,u64> = HashMap::new();
-//   for i in &inode_size
-//   {
-//     if sum_per_dev.contains_key(&i.0[0])
-//     {
-//       sum_per_dev.insert(i.0[0],i.1+sum_per_dev[&i.0[0]]);
-//     }
-//     else {
-//       sum_per_dev.insert(i.0[0],i.1.clone());
-//     }
-//     if !dev_mnt.contains_key(&i.0[0])
-//     {
-//       dev_mnt.insert(i.0[0],inode_hm[i.0].clone());
-//     }
-//     
-//   }
-//   let mut final_dev_mnt = dev_mnt.clone();
-//   for i in &dev_mnt
-//   {
-//     final_dev_mnt.insert(i.0.clone(),get_ult_parent(&i.1));
-//   }
-//   
-//   println!("Finished counting the sizes");
-//   
-//   for i in &sum_per_dev
-//   {
-//     println!("{} {}", final_dev_mnt[i.0].display(), i.1/siz);
-//   }
-  
-  
-//   println!("{}", a.check_if_contains(&PathBuf::from("/home/wallmenis")));
-//   
-//   let v = a.get_children_as_pathbuf(&PathBuf::from("/home/wallmenis"));
-  
-  
-  // for i in &v
-  // {
-  //   println!("{}", i.display());
-  //   println!("{}",get_sizes_recursive(&hm,a ,i)/(siz));
-  // }
-  
-  
-  
   
   if args.flatpak
   {
@@ -111,11 +58,16 @@ fn main(){
       f.find_sizes();
     }
 
-    f.print(siz);
+    if f.path.exists()
+    {
+      f.print(siz);
+    }
+    
+    let user_dir = PathBuf::from(format!("/home/{}/.local/share/flatpak",User::from_uid(getuid()).unwrap().unwrap().name));
     
     let mut u = FlatpakDir::new();
     u.label = String::from("user");
-    u.path = PathBuf::from(format!("/home/{}/.local/share/flatpak",User::from_uid(getuid()).unwrap().unwrap().name));
+    u.path = user_dir;
     if a.check_if_contains(&u.path)
     {
       u.find_sizes_with_tree_and_hm(&hm ,a );
@@ -125,14 +77,64 @@ fn main(){
       u.find_sizes();
     }
     
-    u.print(siz);
+    if u.path.exists()
+    {
+      u.print(siz);
+    }
+    
+    let user_dir = PathBuf::from(format!("/home/{}/.var",User::from_uid(getuid()).unwrap().unwrap().name));
+    
+    let mut u = FlatpakDir::new();
+    u.label = String::from("user-cache");
+    u.path = user_dir;
+    if a.check_if_contains(&u.path)
+    {
+      u.find_sizes_with_tree_and_hm(&hm ,a );
+    }
+    else
+    {
+      u.find_sizes();
+    }
+    
+    if u.path.exists()
+    {
+      u.print(siz);
+    }
     
   }
  
-  
-  for i in &Disks::new_with_refreshed_list()
+  println!("------------------------");
+  // for i in &Disks::new_with_refreshed_list()
+  // {
+  //   println!("{} : {} out of {}",i.mount_point().display(),(i.total_space() - i.available_space())/siz,i.total_space()/siz);
+  // }
+  // let mut ihm : HashMap<u64, PathBuf> = HashMap::new();
+  // for i in &hm
+  // {
+  //   ihm.insert(i.1.dev(), get_ult_parent(i.0));
+  // }
+  let f = std::fs::read_to_string("/proc/self/mounts").expect("This is not a linux environment");
+  let ft : Vec<_> = f.lines().collect();
+  for i in ft
   {
-    println!("{} : {} out of {}",i.mount_point().display(),(i.total_space() - i.available_space())/siz,i.total_space()/siz);
+    let fs : Vec<_> = i.split_whitespace().collect();
+    let filesystem = fs[0];
+    let mountpoint = fs[1];
+    let stats = nix::sys::statvfs::statvfs(mountpoint).expect("Failed to get stats");
+    let mut d = 0;
+    if stats.blocks() != 0
+    {
+      d = 100 - ((stats.blocks_free()*100)/stats.blocks());
+    }
+    if filesystem.len()>7
+    {
+      println!("{}\t {}\t\t {} {}%", filesystem,mountpoint, stats.blocks()*stats.fragment_size()/siz, d);
+    }
+    else {
+      
+      println!("{}\t\t {}\t\t {} {}%", filesystem,mountpoint, stats.blocks()*stats.fragment_size()/siz, d );
+    }
+    
   }
   //a.print();
 }
