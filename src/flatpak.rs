@@ -27,7 +27,7 @@ impl FlatpakDir
     
     pub fn find_sizes(&mut self)
     {
-        let hm = walker(&self.path, Some(true) );
+        let hm = walker(&self.path, true);
         let t = &mut Tree::new();
         t.build_from_hash_map_only_leaf(&hm);
         self.find_sizes_with_tree_and_hm(&hm , t);

@@ -3,6 +3,7 @@ use clap::Parser;
 //use sysinfo::Disks;
 use nix::unistd::{getuid, User};
 
+mod sizes;
 mod flatpak;
 mod arguments;
 mod tree;
@@ -19,28 +20,33 @@ use arguments::*;
 fn main(){
   
   let args = Ar::parse();
-  
-  let s_path = PathBuf::from(args.path);
-  let sup_path = match s_path.canonicalize()
+  let a = &mut Tree::new();
+  let mut hm : HashMap<PathBuf, std::fs::Metadata> = HashMap::new();
+  if !args.path.is_empty()
   {
-    Ok(o) => o,
-    Err(e) =>
+    let s_path = PathBuf::from(args.path);
+    let sup_path = match s_path.canonicalize()
     {
-      eprint!("{}",e);
-      std::process::exit(1);
-    }
-  };
-  
+      Ok(o) => o,
+      Err(e) =>
+      {
+        eprint!("{}",e);
+        std::process::exit(1);
+      }
+    };
+    
+    hm = walker(&sup_path, true);
+    
+    println!("Finished parsing the files");
+    
+    
+    
+    //a.build_from_hash_map_only_leaf(&hm);
+    a.build_from_hash_map(&hm);
+  }
+
   let siz = string_to_data_size(&args.size).value();
   
-  let hm = walker(&sup_path, Some(true));
-  
-  println!("Finished parsing the files");
-  
-  let a = &mut Tree::new();
-  
-  //a.build_from_hash_map_only_leaf(&hm);
-  a.build_from_hash_map(&hm);
   
   println!("Finished indexng the files");
   

@@ -1,8 +1,8 @@
-use std::{collections::{HashMap, HashSet}, fs::Metadata, path::PathBuf};
+use std::{collections::{HashMap, HashSet}, fs::Metadata, os::unix::fs::MetadataExt, path::PathBuf};
 //use std::sync::{Mutex,Arc};
 use serde::{Serialize, Deserialize};
 
-use crate::utils::{get_parent_dirs, get_sizes_recursive};
+use crate::utils::{self, get_parent_dirs, get_sizes_recursive};
 
 #[derive(Clone,Serialize,Deserialize)]
 pub struct Tree{
@@ -106,15 +106,15 @@ impl Tree
         Some(current)
     }
     
-    pub fn get_children_as_pathbuf(&self, start:&PathBuf) -> Vec<PathBuf>
+    pub fn get_children_as_pathbuf(&self, start:&PathBuf) -> HashSet<PathBuf>
     {
-        let mut v = Vec::new();
+        let mut v = HashSet::new();
         
         if self.check_if_contains(start)
         {
-            for i in self.get_child(start).expect("I don't know how this crashed, it is already checked!!!").hm     //already checked before
+            for i in &self.get_child_ref(start).expect("I don't know how this crashed, it is already checked!!!").hm     //already checked before
             {
-                v.push(start.join(i.0));
+                v.insert(start.join(i.0));
             }
         }
         v
@@ -164,7 +164,7 @@ impl Tree
     {
         for i in hm
         {
-            self.make_tree_from_path(i.0,i.1.len() );
+            self.make_tree_from_path(i.0,i.1.blocks()*utils::UNIX_BLOCK_SIZE );
         }
     }
     

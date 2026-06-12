@@ -4,7 +4,10 @@ use jwalk::WalkDir;
 
 use crate::tree::Tree;
 
+pub const UNIX_BLOCK_SIZE : u64 = 512;
 
+
+#[allow(dead_code)]
 pub fn get_ult_parent(pth : &PathBuf) -> PathBuf
 {
     let mut now : PathBuf = pth.clone();
@@ -40,7 +43,7 @@ pub fn get_ult_parent(pth : &PathBuf) -> PathBuf
     prev.clone()
 }
 
-pub fn walker(p : &PathBuf, suppress_errors : Option<bool>) -> HashMap<PathBuf, Metadata>
+pub fn walker(p : &PathBuf, suppress_errors: bool) -> HashMap<PathBuf, Metadata>
 {
     let mut hm : HashMap<PathBuf, Metadata> = HashMap::new();
     let walk = WalkDir::new(p); //.parallelism(jwalk::Parallelism::Serial);
@@ -55,17 +58,11 @@ pub fn walker(p : &PathBuf, suppress_errors : Option<bool>) -> HashMap<PathBuf, 
             Err(e) =>{
                 match suppress_errors
                 {
-                    Some(b) =>
+                    false =>
                     {
-                        if !b 
-                        {
-                            eprintln!("In walker: {} {}",e, &pth.path().display());
-                        }
-                    },
-                    None =>
-                    {
-                        eprintln!("In walker: {} {}",e, &pth.path().display());
+                        eprintln!("In walker: {} {}",e, &pth.path().display())
                     }
+                    true => {}
                 }
                 
                 continue
@@ -80,6 +77,7 @@ pub fn walker(p : &PathBuf, suppress_errors : Option<bool>) -> HashMap<PathBuf, 
     hm
 }
 
+#[allow(dead_code)]
 pub fn inode_deduplicator_single_path(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],PathBuf>
 {
     let mut inode_hm : HashMap<[u64; 2],PathBuf> = HashMap::new();
@@ -101,7 +99,7 @@ pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree,
         let h = &ct.unwrap().hm;   //is checked before
         if h.is_empty()
         {
-            return hm[start].len();
+            return hm[start].blocks()*UNIX_BLOCK_SIZE;
         }
         for i in h
         {
@@ -114,7 +112,6 @@ pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree,
 
 pub fn get_sizes_recursive(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
-    //println!("pth:{}", start.display());
     let inode_bin : &mut HashSet<[u64; 2]> = &mut HashSet::new();
     get_sizes_recursive_inode_bin(hm,t ,start , inode_bin)
 }
@@ -135,7 +132,8 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
             let inode = [hm[start].dev(),hm[start].ino()];
             if !inode_bin.contains(&inode)
             {
-                len = hm[start].len();
+                // len = hm[start].len();
+                len = UNIX_BLOCK_SIZE*hm[start].blocks();
                 inode_bin.insert(inode);
             }
             return len;
@@ -152,28 +150,12 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
 pub fn get_parent_dirs(p : &PathBuf) -> HashSet<PathBuf>
 {
     let mut v = HashSet::new();
-//     let mut pth = Some(p.as_path());
-//     while pth != None && pth != Some(Path::new(""))
-//     {
-//         //println!("{}", pth.unwrap().display());
-//         v.push(PathBuf::from(
-//             match pth
-//             {
-//                 Some(o) => o,
-//                 None => Path::new("")
-//             }
-//             
-//         ));
-//         pth = pth.unwrap_or(Path::new("")).parent();
-//     }
     let mut pth = PathBuf::from("/");
     for i in p.components()
     {
         pth=pth.join(i);
         v.insert(pth.clone());
-        //println!("vibe:{}",pth.display());
     }
-    
     v
 }
 
@@ -188,13 +170,14 @@ pub fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],
     }
     inode_hm
 }
-                                 
+
+#[allow(dead_code)]                    
 pub fn inode_sizes(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],u64> 
 {
     let mut inode_size : HashMap<[u64; 2],u64> = HashMap::new();
     for i in hm{
         let inode = [i.1.dev(),i.1.ino()];
-        inode_size.insert(inode,i.1.len());
+        inode_size.insert(inode,i.1.blocks()*UNIX_BLOCK_SIZE);
         //inode_size.insert(inode,512*i.1.blocks());
     }
     inode_size
