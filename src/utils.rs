@@ -4,7 +4,7 @@ use jwalk::WalkDir;
 
 use crate::tree::Tree;
 
-pub const UNIX_BLOCK_SIZE : u64 = 512;
+use crate::sizes::UNIX_BLOCK_SIZE;
 
 
 #[allow(dead_code)]

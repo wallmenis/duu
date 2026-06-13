@@ -4,6 +4,8 @@ use serde::{Serialize, Deserialize};
 
 use crate::utils::{self, get_parent_dirs, get_sizes_recursive};
 
+use crate::sizes::UNIX_BLOCK_SIZE;
+
 #[derive(Clone,Serialize,Deserialize)]
 pub struct Tree{
     #[serde(rename="sub-dir")]
@@ -164,7 +166,7 @@ impl Tree
     {
         for i in hm
         {
-            self.make_tree_from_path(i.0,i.1.blocks()*utils::UNIX_BLOCK_SIZE );
+            self.make_tree_from_path(i.0,i.1.blocks()*UNIX_BLOCK_SIZE );
         }
     }
     

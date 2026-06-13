@@ -16,6 +16,7 @@ pub struct Ar
     pub containers : bool
 }
 
+#[derive(Clone, Copy)]
 #[repr(u64)]
 pub enum DataSizes {
     B = 1,
@@ -29,6 +30,16 @@ impl DataSizes
     pub fn value(self) -> u64
     {
         self as u64
+    }
+    pub fn to_string(self) -> String
+    {
+        match self
+        {
+            DataSizes::B => "B".to_string(),
+            DataSizes::KB => "KB".to_string(),
+            DataSizes::MB => "MB".to_string(),
+            DataSizes::GB => "GB".to_string()
+        }
     }
 }
 

@@ -1,5 +1,9 @@
 use std::path::PathBuf;
 
+use crate::arguments::DataSizes;
+
+pub const UNIX_BLOCK_SIZE : u64 = 512;
+
 pub struct Size
 {
     pub filesystem : String,
@@ -7,61 +11,131 @@ pub struct Size
     pub blocks : u64,
     pub used : u64,
     pub available : u64,
-    pub use_perc : u64
+    pub blk_sz : u64,
+    pub sd : DataSizes
 }
 
 impl Size
 {
     pub fn new() -> Self
     {
-        Size { filesystem: String::new(), path: PathBuf::new(), blocks:0 , used:0 , available:0 , use_perc:0  }
+        Size { filesystem: String::new(), path: PathBuf::new(), blocks:0 , used:0 , available:0 ,blk_sz: UNIX_BLOCK_SIZE, sd : DataSizes::KB }
+    }
+    
+    fn use_perc(&self)->u64
+    {
+        if self.blocks == 0
+        {
+            return 0;
+        }
+        ((self.blocks - self.available)*100)/self.blocks
+        //(self.used*100)/self.blocks
+    }
+    
+    fn get_blocks(&self) -> u64
+    {
+        (self.blocks*self.blk_sz)/self.sd.value()
+    }
+    
+    fn get_used(&self) -> u64
+    {
+        (self.used*self.blk_sz)/self.sd.value()
+    }
+    
+    fn get_avail(&self) -> u64
+    {
+        (self.available*self.blk_sz)/self.sd.value()
     }
     
     fn print_one_line(&self, tabs : [u64; 5])
     {
         let mut t : [String; 5] = [String::new(),String::new(),String::new(),String::new(),String::new()];
-        for i in tabs
+        // let mut t : [String; 5] = [String::new(); 5];
+        for i in 0..5
         {
-            for _ in (0 as u64)..i
+            for _ in (0 as u64)..tabs[i]
             {
-                t.get_mut(i as usize).unwrap().push_str("\t");
+                t[i as usize].push_str(" ");
             }
         }
         
-        println!("{}{}{}{}{}{}{}{}{}{}{}",
+        println!("{}{}{}{}{}{}{}{}{}{}{}%",
                  self.filesystem,t[0],
                  self.path.display(),t[1],
-                 self.blocks,t[2],
-                 self.used,t[3],
-                 self.available,t[4],
-                 self.use_perc);
+                 self.get_blocks(),t[2],
+                 self.get_used(),t[3],
+                 self.get_avail(),t[4],
+                 self.use_perc());
         
     }
     
     fn calculate_spaces(&self, spaces: [u64; 5]) -> [u64; 5]
     {
-        let mut t : [u64; 5] = [0,0,0,0,0];
+        let mut t : [u64; 5] = [0;5];
         t[0] = Size::subtract_tab(spaces[0], &self.filesystem );
-        t[0] = Size::subtract_tab(spaces[0], &self.path.display().to_string() );
-        t[0] = Size::subtract_tab(spaces[0], &self.blocks.to_string() );
-        t[0] = Size::subtract_tab(spaces[0], &self.used.to_string() );
-        t[0] = Size::subtract_tab(spaces[0], &self.available.to_string() );
+        t[1] = Size::subtract_tab(spaces[1], &self.path.display().to_string() );
+        t[2] = Size::subtract_tab(spaces[2], &self.get_blocks().to_string() );
+        t[3] = Size::subtract_tab(spaces[3], &self.get_used().to_string() );
+        t[4] = Size::subtract_tab(spaces[4], &self.get_avail().to_string() );
         t
     }
     
     fn subtract_tab(i: u64, s : &String) ->u64
     {
-        let intabs = s.len()/4;
-        if i as usize - intabs > 0
+        let intabs = s.len();
+        if i as usize - intabs < i as usize + intabs
         {
             return (i as usize - intabs) as u64;
         }
             
         0
     }
-    
-    pub fn df()
+    #[allow(dead_code)]
+    fn get_max_space(&self) -> u64
     {
+        
+        let mut max = 0;
+        max = if self.filesystem.len() > max {self.filesystem.len()} else {max} ;
+        max = if self.path.display().to_string().len() > max {self.path.display().to_string().len()} else {max} ;
+        max = if self.get_blocks().to_string().len() > max {self.get_blocks().to_string().len()} else {max} ;
+        max = if self.get_used().to_string().len() > max {self.get_used().to_string().len()} else {max} ;
+        max = if self.get_avail().to_string().len() > max {self.get_avail().to_string().len()} else {max} ;
+        max as u64
+    }
+    
+    fn get_sizes(&self) -> [u64;5]
+    {
+        let mut t = [0;5];
+        t[0] = self.filesystem.len() as u64;
+        t[1] = self.path.display().to_string().len() as u64;
+        t[2] = self.get_blocks().to_string().len() as u64;
+        t[3] = self.get_used().to_string().len() as u64;
+        t[4] = self.get_avail().to_string().len() as u64;
+        t
+    }
+    
+    pub fn df(items : &Vec<Size>)
+    {
+        let mut max_tabbs = [0; 5];
+        for i in items
+        {
+            let siz = i.get_sizes();
+            for j in 0..5
+            {
+                max_tabbs[j] = if siz[j] > max_tabbs[j] {siz[j]} else {max_tabbs[j]}
+            }
+            
+        }
+        
+        for i in 0..5
+        {
+            max_tabbs[i] += 1;
+        }
+        
+        for i in items
+        {
+            i.print_one_line(i.calculate_spaces(max_tabbs));
+        }
         
     }
 }

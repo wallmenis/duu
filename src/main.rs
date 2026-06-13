@@ -15,6 +15,8 @@ use utils::*;
 use flatpak::FlatpakDir;
 use arguments::*;
 
+use sizes::Size;
+
 
 
 fn main(){
@@ -49,6 +51,8 @@ fn main(){
   
   
   println!("Finished indexng the files");
+  
+  println!("Sizes in {}", string_to_data_size(&args.size).to_string());
   
   if args.flatpak
   {
@@ -118,6 +122,7 @@ fn main(){
   //   ihm.insert(i.1.dev(), get_ult_parent(i.0));
   // }
   let f = std::fs::read_to_string("/proc/self/mounts").expect("This is not a linux environment");
+  let mut sizes_vec : Vec<Size> = Vec::new();
   let ft : Vec<_> = f.lines().collect();
   for i in ft
   {
@@ -125,20 +130,16 @@ fn main(){
     let filesystem = fs[0];
     let mountpoint = fs[1];
     let stats = nix::sys::statvfs::statvfs(mountpoint).expect("Failed to get stats");
-    let mut d = 0;
-    if stats.blocks() != 0
-    {
-      d = 100 - ((stats.blocks_free()*100)/stats.blocks());
-    }
-    if filesystem.len()>7
-    {
-      println!("{}\t {}\t\t {} {}%", filesystem,mountpoint, stats.blocks()*stats.fragment_size()/siz, d);
-    }
-    else {
-      
-      println!("{}\t\t {}\t\t {} {}%", filesystem,mountpoint, stats.blocks()*stats.fragment_size()/siz, d );
-    }
-    
+    let mut s : Size = Size::new();
+    s.filesystem = filesystem.to_string();
+    s.path = PathBuf::from(mountpoint);
+    s.blocks = stats.blocks();
+    s.used = stats.blocks() - stats.blocks_free();
+    s.available = stats.blocks_available();
+    s.blk_sz = stats.fragment_size();
+    s.sd = string_to_data_size(&args.size);
+    sizes_vec.push(s);
   }
+  Size::df(&sizes_vec);
   //a.print_json();
 }
