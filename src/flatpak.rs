@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, fs::Metadata};
 
 use serde::Serialize;
 
-use crate::{tree::Tree, utils::{get_sizes_recursive, walker}};
+use crate::{tree::Tree, utils::{get_sizes_recursive_hash_map, walker}};
 
 #[derive(Serialize,Clone)]
 pub struct FlatpakDir
@@ -45,11 +45,11 @@ impl FlatpakDir
         let runtimes = t.get_children_as_pathbuf(&runtimes_path);
         for i in &apps
         {
-            self.apps.insert(i.file_name().unwrap_or_default().display().to_string(), get_sizes_recursive(hm, t, i));
+            self.apps.insert(i.file_name().unwrap_or_default().display().to_string(), get_sizes_recursive_hash_map(hm, t, i));
         }
         for i in &runtimes
         {
-             self.runtimes.insert(i.file_name().unwrap_or_default().display().to_string(), get_sizes_recursive(hm, t, i));
+             self.runtimes.insert(i.file_name().unwrap_or_default().display().to_string(), get_sizes_recursive_hash_map(hm, t, i));
         }
        
     }

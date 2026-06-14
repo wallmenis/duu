@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, fs::Metadata, os::unix::fs::MetadataE
 //use std::sync::{Mutex,Arc};
 use serde::{Serialize, Deserialize};
 
-use crate::utils::{self, get_parent_dirs, get_sizes_recursive};
+use crate::utils::{get_parent_dirs, get_sizes_recursive_hash_map, inode_sizes};
 
 use crate::sizes::UNIX_BLOCK_SIZE;
 
@@ -10,7 +10,9 @@ use crate::sizes::UNIX_BLOCK_SIZE;
 pub struct Tree{
     #[serde(rename="sub-dir")]
     pub hm : HashMap<String, Tree>,
-    pub size : u64
+    pub size : u64,
+    #[serde(skip)]
+    pub inodes : HashSet<[u64;2]>
 }
 
 impl Tree
@@ -20,7 +22,8 @@ impl Tree
     {
         Tree {
             hm : HashMap::new(),
-            size : 0
+            size : 0,
+            inodes : HashSet::new()
         }
     }
     
@@ -30,7 +33,17 @@ impl Tree
         return ret;
     }
     
-    pub fn make_tree_from_path(&mut self, pth : &PathBuf, l : u64)
+    pub fn get_hm_keys(&self) -> HashSet<String>
+    {
+        let mut hs = HashSet::new();
+        for i in &self.hm
+        {
+            hs.insert(i.0.clone());
+        }
+        hs
+    }
+    
+    pub fn make_tree_from_path(&mut self, pth : &PathBuf, l : u64, ino : [u64; 2])
     {
         let c : Vec<_> = pth.components().collect();
         let mut current = self;
@@ -44,6 +57,7 @@ impl Tree
             current = current.get_mut_tree(&k).expect("I don't know how this happened!"); // It is not likely to break. I think there is a more efficient way to do the creation.
         }
         current.size = l;
+        current.inodes.insert(ino);
     }
     
     pub fn check_if_contains(&self, pth : &PathBuf) -> bool
@@ -122,32 +136,11 @@ impl Tree
         v
     }
     
-    //pub fn build_from_hash_map(&mut self, hm : &HashMap<PathBuf,Metadata>)
     pub fn build_from_hash_map(&mut self, hm : &HashMap<PathBuf,Metadata>)
     {
-        // Need to make multithreaded for performance
-//         let mhs : Arc<Mutex<HashSet<PathBuf>>>= Arc::new(Mutex::new(HashSet::new()));
-//         for i in hm
-//         {
-//             self.make_tree_from_path(i.0,i.1.len() );
-//             let pb = i.0.clone();
-//             let mt = i.1.clone();
-//             std::thread::spawn( || {
-//                 let paths = get_parent_dirs(pb);
-//                     for j in &paths
-//                     {
-//                         if !mhs.lock().unwrap().contains(j)
-//                         {
-//                             mhs.insert(j.clone());
-//                             self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
-//                         }
-//                     }
-//                 });
-//             
-//         }
-        
         //println!("\tmaking leaves");
         self.build_from_hash_map_only_leaf(hm);
+        let ino = inode_sizes(hm);
         let mut hs : HashSet<PathBuf>= HashSet::new();
         //println!("\tmarking paths");
         for i in hm
@@ -155,18 +148,80 @@ impl Tree
             let paths : HashSet<PathBuf> = get_parent_dirs(i.0);
             hs.extend(paths);
         }
-        println!("\tmarking sizes");
-        for j in &hs
-        {
-            self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive(hm,self ,j );
-        }
+        //println!("\tmarking sizes");
+        // for j in &hs
+        // {
+        //     self.get_child_mut_ref(j).expect("Ah hell nahh").size = get_sizes_recursive_hash_map(hm,self ,j );
+        // }
+        self.get_sizes(&ino);
     }
+    
+    pub fn get_sizes(&mut self, inodes : &HashMap<[u64;2],u64>)-> &mut Tree
+    {
+        let hs = &self.get_hm_keys();
+        let mut ino : Vec<HashSet<[u64;2]>> = Vec::new();
+        let mut sum = 0;
+        let mut now = &mut Tree::new();
+        for i in hs
+        {
+             now = self.get_mut_tree(&i).expect("There wouldn't be any hm entries in the original tree for it to reach this").get_sizes(inodes);
+              //   += self.get_mut_tree(&i).expect("There wouldn't be any hm entries in the original tree for it to reach this").get_sizes(inodes).size;
+             sum += now.size;
+             ino.push(now.inodes.clone());
+        }
+        sum -= Tree::get_size_for_removal(&ino,inodes );
+        
+        if hs.is_empty()
+        {
+            return self;
+        }
+        self.size = sum;
+        self
+    }
+    
+    fn get_size_for_removal(ino : &Vec<HashSet<[u64;2]>> ,inodes : &HashMap<[u64;2],u64>) -> u64
+    {
+        let mut all : HashSet<[u64;2]> = HashSet::new();
+        let mut all_with_multiplicities = HashMap::new();
+        for i in ino
+        {
+            all.extend(i);
+            for j in i
+            {
+                *all_with_multiplicities.entry(j).or_insert(0) += 1;
+            }
+        }
+        for i in &all
+        {
+            *all_with_multiplicities.get_mut(i).expect("This will crash if all is not a copy of the keys of all_with_multiplicities") -= 1;
+        }
+        for i in &all
+        {
+            if all_with_multiplicities[i] <= 0
+            {
+                all_with_multiplicities.remove(i);
+            }
+        }
+        let mut sum = 0;
+        for i in all_with_multiplicities.keys()
+        {
+            sum += inodes[*i];
+        }
+        sum
+    }
+    
     
     pub fn build_from_hash_map_only_leaf(&mut self, hm : &HashMap<PathBuf,Metadata>)
     {
         for i in hm
         {
-            self.make_tree_from_path(i.0,i.1.blocks()*UNIX_BLOCK_SIZE );
+            let mut siz = UNIX_BLOCK_SIZE;
+            match nix::sys::statvfs::statvfs(i.0)
+            {
+                Ok(o) => {siz = o.fragment_size();},
+                Err(e) => {eprintln!("file {} modified on scanning: {}", i.0.display(), e);}
+            };
+            self.make_tree_from_path(i.0,i.1.blocks()*siz, [i.1.dev(), i.1.ino()]);
         }
     }
     

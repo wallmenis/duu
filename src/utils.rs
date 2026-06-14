@@ -43,6 +43,8 @@ pub fn get_ult_parent(pth : &PathBuf) -> PathBuf
     prev.clone()
 }
 
+
+
 pub fn walker(p : &PathBuf, suppress_errors: bool) -> HashMap<PathBuf, Metadata>
 {
     let mut hm : HashMap<PathBuf, Metadata> = HashMap::new();
@@ -109,14 +111,14 @@ pub fn get_sizes_recursive_no_dedup(hm : &HashMap<PathBuf, Metadata>, t : &Tree,
     }
     sum
 }
-
-pub fn get_sizes_recursive(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
+#[allow(dead_code)]
+pub fn get_sizes_recursive_hash_map(hm : &HashMap<PathBuf, Metadata>, t : &Tree, start : &PathBuf) -> u64
 {
     let inode_bin : &mut HashSet<[u64; 2]> = &mut HashSet::new();
-    get_sizes_recursive_inode_bin(hm,t ,start , inode_bin)
+    get_sizes_recursive_hash_map_inode_bin(hm,t ,start , inode_bin)
 }
-
-pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
+#[allow(dead_code)]
+pub fn get_sizes_recursive_hash_map_inode_bin(hm : &HashMap<PathBuf, Metadata>,
                                  t : &Tree,
                                  start : &PathBuf,
                                  inode_bin : &mut HashSet<[u64; 2]>) -> u64
@@ -141,7 +143,7 @@ pub fn get_sizes_recursive_inode_bin(hm : &HashMap<PathBuf, Metadata>,
         for i in h
         {
             let current = start.join(i.0);
-            sum += get_sizes_recursive_inode_bin(hm,t ,&current , inode_bin);
+            sum += get_sizes_recursive_hash_map_inode_bin(hm,t ,&current , inode_bin);
         }
     }
     sum
@@ -171,7 +173,7 @@ pub fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],
     inode_hm
 }
 
-#[allow(dead_code)]                    
+
 pub fn inode_sizes(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],u64> 
 {
     let mut inode_size : HashMap<[u64; 2],u64> = HashMap::new();

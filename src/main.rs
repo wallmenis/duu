@@ -45,6 +45,7 @@ fn main(){
     
     //a.build_from_hash_map_only_leaf(&hm);
     a.build_from_hash_map(&hm);
+    a.print_json();
   }
 
   let siz = string_to_data_size(&args.size).value();
