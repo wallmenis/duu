@@ -207,7 +207,7 @@ impl Tree
         }
         for i in &all
         {
-            if all_with_multiplicities[i] <= 0
+            if all_with_multiplicities[i] == 0
             {
                 all_with_multiplicities.remove(i);
             }
@@ -215,7 +215,7 @@ impl Tree
         let mut sum = 0;
         for i in all_with_multiplicities.keys()
         {
-            sum += inodes[*i];
+            sum += inodes[*i] * all_with_multiplicities[*i];
         }
         sum
     }
