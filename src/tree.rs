@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::utils::{get_parent_dirs, get_sizes_recursive_hash_map, inode_sizes};
 
-use crate::sizes::UNIX_BLOCK_SIZE;
+use crate::df::UNIX_BLOCK_SIZE;
 
 #[derive(Clone,Serialize,Deserialize)]
 pub struct Tree{
