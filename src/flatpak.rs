@@ -25,6 +25,16 @@ impl FlatpakDir
         }
     }
     
+    pub fn new_with_params(l : &String, p : &PathBuf) -> Self
+    {
+        FlatpakDir {
+            label : l.clone(), 
+            path: p.clone(),
+            apps: HashMap::new(),
+            runtimes : HashMap::new()
+        }
+    }
+    
     pub fn find_sizes(&mut self)
     {
         let hm = walker(&self.path, true);

@@ -3,6 +3,7 @@ use clap::Parser;
 //use sysinfo::Disks;
 use nix::unistd::{getuid, User};
 
+mod container;
 mod df;
 mod flatpak;
 mod arguments;
