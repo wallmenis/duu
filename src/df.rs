@@ -4,7 +4,7 @@ use crate::arguments::DataSizes;
 
 pub const UNIX_BLOCK_SIZE : u64 = 512;
 
-pub struct Size
+pub struct DFEntry
 {
     pub filesystem : String,
     pub path : PathBuf,
@@ -15,11 +15,11 @@ pub struct Size
     pub sd : DataSizes
 }
 
-impl Size
+impl DFEntry
 {
     pub fn new() -> Self
     {
-        Size { filesystem: String::new(), path: PathBuf::new(), blocks:0 , used:0 , available:0 ,blk_sz: UNIX_BLOCK_SIZE, sd : DataSizes::KB }
+        DFEntry { filesystem: String::new(), path: PathBuf::new(), blocks:0 , used:0 , available:0 ,blk_sz: UNIX_BLOCK_SIZE, sd : DataSizes::KB }
     }
     
     fn use_perc(&self)->u64
@@ -72,11 +72,11 @@ impl Size
     fn calculate_spaces(&self, spaces: [u64; 5]) -> [u64; 5]
     {
         let mut t : [u64; 5] = [0;5];
-        t[0] = Size::subtract_tab(spaces[0], &self.filesystem );
-        t[1] = Size::subtract_tab(spaces[1], &self.path.display().to_string() );
-        t[2] = Size::subtract_tab(spaces[2], &self.get_blocks().to_string() );
-        t[3] = Size::subtract_tab(spaces[3], &self.get_used().to_string() );
-        t[4] = Size::subtract_tab(spaces[4], &self.get_avail().to_string() );
+        t[0] = DFEntry::subtract_tab(spaces[0], &self.filesystem );
+        t[1] = DFEntry::subtract_tab(spaces[1], &self.path.display().to_string() );
+        t[2] = DFEntry::subtract_tab(spaces[2], &self.get_blocks().to_string() );
+        t[3] = DFEntry::subtract_tab(spaces[3], &self.get_used().to_string() );
+        t[4] = DFEntry::subtract_tab(spaces[4], &self.get_avail().to_string() );
         t
     }
     
@@ -114,7 +114,7 @@ impl Size
         t
     }
     
-    pub fn df(items : &Vec<Size>)
+    pub fn df(items : &Vec<DFEntry>)
     {
         let mut max_tabbs = [0; 5];
         for i in items

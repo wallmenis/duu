@@ -3,7 +3,7 @@ use clap::Parser;
 //use sysinfo::Disks;
 use nix::unistd::{getuid, User};
 
-mod sizes;
+mod df;
 mod flatpak;
 mod arguments;
 mod tree;
@@ -15,7 +15,7 @@ use utils::*;
 use flatpak::FlatpakDir;
 use arguments::*;
 
-use sizes::Size;
+use df::DFEntry;
 
 
 
@@ -127,7 +127,7 @@ fn main(){
   //   ihm.insert(i.1.dev(), get_ult_parent(i.0));
   // }
   let f = std::fs::read_to_string("/proc/self/mounts").expect("This is not a linux environment");
-  let mut sizes_vec : Vec<Size> = Vec::new();
+  let mut sizes_vec : Vec<DFEntry> = Vec::new();
   let ft : Vec<_> = f.lines().collect();
   for i in ft
   {
@@ -135,7 +135,7 @@ fn main(){
     let filesystem = fs[0];
     let mountpoint = fs[1];
     let stats = nix::sys::statvfs::statvfs(mountpoint).expect("Failed to get stats");
-    let mut s : Size = Size::new();
+    let mut s : DFEntry = DFEntry::new();
     s.filesystem = filesystem.to_string();
     s.path = PathBuf::from(mountpoint);
     s.blocks = stats.blocks();
@@ -145,6 +145,6 @@ fn main(){
     s.sd = string_to_data_size(&args.size);
     sizes_vec.push(s);
   }
-  Size::df(&sizes_vec);
+  DFEntry::df(&sizes_vec);
   //a.print_json();
 }
