@@ -179,6 +179,12 @@ pub fn inode_sizes(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],u64>
     let mut inode_size : HashMap<[u64; 2],u64> = HashMap::new();
     for i in hm{
         let inode = [i.1.dev(),i.1.ino()];
+        // let mut siz = UNIX_BLOCK_SIZE;
+        // match nix::sys::statvfs::statvfs(i.0)
+        // {
+        //     Ok(o) => {siz = o.fragment_size();},
+        //     Err(e) => {eprintln!("file {} modified on scanning: {}", i.0.display(), e);}
+        // };
         inode_size.insert(inode,i.1.blocks()*UNIX_BLOCK_SIZE);
         //inode_size.insert(inode,512*i.1.blocks());
     }

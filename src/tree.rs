@@ -234,5 +234,4 @@ impl Tree
             self.make_tree_from_path(i.0,i.1.blocks()*siz, [i.1.dev(), i.1.ino()]);
         }
     }
-    
 }
