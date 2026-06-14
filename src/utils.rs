@@ -43,7 +43,40 @@ pub fn get_ult_parent(pth : &PathBuf) -> PathBuf
     prev.clone()
 }
 
-
+pub fn walker_tree(p : &PathBuf, suppress_errors: bool) -> Tree
+{
+    let mut t = Tree::new();
+    let walk = WalkDir::new(p); //.parallelism(jwalk::Parallelism::Serial);
+    let final_walk = walk.into_iter().filter_map(|pth| pth.ok());
+    let mut inodes : HashMap<[u64;2], u64> = HashMap::new();
+    for pth in final_walk{
+        if pth.path_is_symlink() {
+            continue;
+        }
+        let f = match std::fs::metadata(&pth.path()){
+            Ok(fle) => fle,
+            Err(e) =>{
+                match suppress_errors
+                {
+                    false =>
+                    {
+                        eprintln!("In walker: {} {}",e, &pth.path().display())
+                    }
+                    true => {}
+                }
+                
+                continue
+            }
+        };
+        if f.is_file()
+        {
+            t.make_tree_from_path(&pth.path(),f.len() ,[f.dev(),f.ino()] );
+            inodes.insert([f.dev(),f.ino()],f.len() );
+        }
+    }
+    t.get_sizes(&inodes);
+    t
+}
 
 pub fn walker(p : &PathBuf, suppress_errors: bool) -> HashMap<PathBuf, Metadata>
 {

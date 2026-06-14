@@ -225,13 +225,13 @@ impl Tree
     {
         for i in hm
         {
-            let mut siz = UNIX_BLOCK_SIZE;
-            match nix::sys::statvfs::statvfs(i.0)
-            {
-                Ok(o) => {siz = o.fragment_size();},
-                Err(e) => {eprintln!("file {} modified on scanning: {}", i.0.display(), e);}
-            };
-            self.make_tree_from_path(i.0,i.1.blocks()*siz, [i.1.dev(), i.1.ino()]);
+            // let mut siz = UNIX_BLOCK_SIZE;
+            // match nix::sys::statvfs::statvfs(i.0)
+            // {
+            //     Ok(o) => {siz = o.fragment_size();},
+            //     Err(e) => {eprintln!("file {} modified on scanning: {}", i.0.display(), e);}
+            // };
+            self.make_tree_from_path(i.0,i.1.blocks()*UNIX_BLOCK_SIZE, [i.1.dev(), i.1.ino()]);
         }
     }
 }

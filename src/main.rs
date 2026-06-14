@@ -22,7 +22,7 @@ use sizes::Size;
 fn main(){
   
   let args = Ar::parse();
-  let a = &mut Tree::new();
+  let mut a = Tree::new();
   let mut hm : HashMap<PathBuf, std::fs::Metadata> = HashMap::new();
   if !args.path.is_empty()
   {
@@ -37,14 +37,15 @@ fn main(){
       }
     };
     
-    hm = walker(&sup_path, true);
+    //hm = walker(&sup_path, true);
+    a = walker_tree(&sup_path, true);
     
     println!("Finished parsing the files");
     
     
     
     //a.build_from_hash_map_only_leaf(&hm);
-    a.build_from_hash_map(&hm);
+    //a.build_from_hash_map(&hm);
     a.print_json();
   }
 
@@ -60,7 +61,7 @@ fn main(){
     let mut f = FlatpakDir::new();
     if a.check_if_contains(&f.path)
     {
-      f.find_sizes_with_tree_and_hm(&hm ,a );
+      f.find_sizes_with_tree_and_hm(&hm ,&mut a );
     }
     else
     {
@@ -79,7 +80,7 @@ fn main(){
     u.path = user_dir;
     if a.check_if_contains(&u.path)
     {
-      u.find_sizes_with_tree_and_hm(&hm ,a );
+      u.find_sizes_with_tree_and_hm(&hm ,&mut a );
     }
     else
     {
@@ -98,7 +99,7 @@ fn main(){
     u.path = user_dir;
     if a.check_if_contains(&u.path)
     {
-      u.find_sizes_with_tree_and_hm(&hm ,a );
+      u.find_sizes_with_tree_and_hm(&hm ,&mut a );
     }
     else
     {
