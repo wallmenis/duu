@@ -83,7 +83,7 @@ impl Size
     fn subtract_tab(i: u64, s : &String) ->u64
     {
         let intabs = s.len();
-        if i as usize - intabs < i as usize + intabs
+        if (i as usize) > intabs
         {
             return (i as usize - intabs) as u64;
         }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, fs::Metadata};
 
 use serde::Serialize;
 
-use crate::{tree::Tree, utils::{get_sizes_recursive_hash_map, walker}};
+use crate::{tree::Tree, utils::{get_sizes_recursive_hash_map, walker, walker_tree}};
 
 #[derive(Serialize,Clone)]
 pub struct FlatpakDir
@@ -52,6 +52,33 @@ impl FlatpakDir
              self.runtimes.insert(i.file_name().unwrap_or_default().display().to_string(), get_sizes_recursive_hash_map(hm, t, i));
         }
        
+    }
+    
+    pub fn find_sizes_using_tree(&mut self)
+    {
+        let t = walker_tree(&self.path, true );
+        self.find_sizes_with_tree(&t);
+    }
+    
+    pub fn find_sizes_with_tree(&mut self,  t : &Tree)
+    {
+        if !t.check_if_contains(&self.path)
+        {
+            return;
+        }
+        let apps_path = self.path.join("app");
+        let runtimes_path = self.path.join("runtime");
+        let apps = t.get_children_as_pathbuf(&apps_path);
+        let runtimes = t.get_children_as_pathbuf(&runtimes_path);
+        for i in &apps
+        {
+            self.apps.insert(i.file_name().unwrap_or_default().display().to_string(), t.get_child_ref(i).unwrap().size);
+        }
+        for i in &runtimes
+        {
+            self.runtimes.insert(i.file_name().unwrap_or_default().display().to_string(), t.get_child_ref(i).unwrap().size);
+        }
+        
     }
     
     pub fn print(&self, size_div : u64)

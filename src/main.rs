@@ -23,7 +23,7 @@ fn main(){
   
   let args = Ar::parse();
   let mut a = Tree::new();
-  let mut hm : HashMap<PathBuf, std::fs::Metadata> = HashMap::new();
+  //let mut hm : HashMap<PathBuf, std::fs::Metadata> = HashMap::new();
   if !args.path.is_empty()
   {
     let s_path = PathBuf::from(args.path);
@@ -61,7 +61,8 @@ fn main(){
     let mut f = FlatpakDir::new();
     if a.check_if_contains(&f.path)
     {
-      f.find_sizes_with_tree_and_hm(&hm ,&mut a );
+      f.find_sizes_with_tree(&a);
+      //f.find_sizes_with_tree_and_hm(&hm ,&mut a );
     }
     else
     {
@@ -80,7 +81,8 @@ fn main(){
     u.path = user_dir;
     if a.check_if_contains(&u.path)
     {
-      u.find_sizes_with_tree_and_hm(&hm ,&mut a );
+      // u.find_sizes_with_tree_and_hm(&hm ,&mut a );
+      f.find_sizes_with_tree(&a);
     }
     else
     {
@@ -99,7 +101,8 @@ fn main(){
     u.path = user_dir;
     if a.check_if_contains(&u.path)
     {
-      u.find_sizes_with_tree_and_hm(&hm ,&mut a );
+      // u.find_sizes_with_tree_and_hm(&hm ,&mut a );
+      f.find_sizes_with_tree(&a);
     }
     else
     {
