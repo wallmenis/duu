@@ -70,8 +70,8 @@ pub fn walker_tree(p : &PathBuf, suppress_errors: bool) -> Tree
         };
         if f.is_file()
         {
-            t.make_tree_from_path(&pth.path(),f.len() ,[f.dev(),f.ino()] );
-            inodes.insert([f.dev(),f.ino()],f.len() );
+            t.make_tree_from_path(&pth.path(),f.blocks()*UNIX_BLOCK_SIZE ,[f.dev(),f.ino()] );
+            inodes.insert([f.dev(),f.ino()],f.blocks()*UNIX_BLOCK_SIZE );
         }
     }
     t.get_sizes(&inodes);
@@ -181,7 +181,7 @@ pub fn get_sizes_recursive_hash_map_inode_bin(hm : &HashMap<PathBuf, Metadata>,
     }
     sum
 }
-
+#[allow(dead_code)]
 pub fn get_parent_dirs(p : &PathBuf) -> HashSet<PathBuf>
 {
     let mut v = HashSet::new();
@@ -206,7 +206,7 @@ pub fn inode_deduplicator(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],
     inode_hm
 }
 
-
+#[allow(dead_code)]
 pub fn inode_sizes(hm : &HashMap<PathBuf, Metadata>) -> HashMap<[u64; 2],u64> 
 {
     let mut inode_size : HashMap<[u64; 2],u64> = HashMap::new();

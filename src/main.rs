@@ -40,7 +40,7 @@ fn main(){
     //hm = walker(&sup_path, true);
     a = walker_tree(&sup_path, true);
     
-    println!("Finished parsing the files");
+    //println!("Finished parsing the files");
     
     
     
@@ -52,7 +52,7 @@ fn main(){
   let siz = string_to_data_size(&args.size).value();
   
   
-  println!("Finished indexng the files");
+  //println!("Finished indexng the files");
   
   println!("Sizes in {}", string_to_data_size(&args.size).to_string());
   
