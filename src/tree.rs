@@ -176,9 +176,19 @@ impl Tree
             return self;
         }
         self.size = sum;
+        self.inodes.extend(Tree::vec_to_hs(&ino));
         self
     }
     
+    fn vec_to_hs(ino : &Vec<HashSet<[u64;2]>>) -> HashSet<[u64;2]> 
+    {
+        let mut hs = HashSet::new();
+        for i in ino
+        {
+            hs.extend(i);
+        }
+        hs
+    }
     fn get_size_for_removal(ino : &Vec<HashSet<[u64;2]>> ,inodes : &HashMap<[u64;2],u64>) -> u64
     {
         let mut all : HashSet<[u64;2]> = HashSet::new();
