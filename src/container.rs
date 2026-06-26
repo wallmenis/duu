@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, io::Write, path::PathBuf};
 
 use serde::Serialize;
 
@@ -87,7 +87,7 @@ impl ContainerCon
         
         let sock = sock_.unwrap();
         
-        
+        let request = "GET";
         
         
         Ok(())

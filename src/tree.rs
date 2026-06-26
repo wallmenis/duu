@@ -161,7 +161,7 @@ impl Tree
         let hs = &self.get_hm_keys();
         let mut ino : Vec<HashSet<[u64;2]>> = Vec::new();
         let mut sum = 0;
-        let mut now = &mut Tree::new();
+        let mut now; //= &mut Tree::new();
         for i in hs
         {
              now = self.get_mut_tree(&i).expect("There wouldn't be any hm entries in the original tree for it to reach this").get_sizes(inodes);
@@ -232,6 +232,25 @@ impl Tree
             //     Err(e) => {eprintln!("file {} modified on scanning: {}", i.0.display(), e);}
             // };
             self.make_tree_from_path(i.0,i.1.blocks()*UNIX_BLOCK_SIZE, [i.1.dev(), i.1.ino()]);
+        }
+    }
+    
+    pub fn print(&self, depth : u64, start : &PathBuf, siz : u64)
+    {
+        let s = self.get_child_ref(start);
+        if s.is_none()
+        {
+            return ();
+        }
+        let st = s.unwrap();
+        println!("{} {}",start.display(), st.size/siz);
+        if depth == 0
+        {
+            return ();
+        }
+        for i in &self.get_children_as_pathbuf(start)
+        {
+            self.print(depth-1, i, siz);
         }
     }
 }

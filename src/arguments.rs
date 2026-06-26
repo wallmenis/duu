@@ -9,11 +9,17 @@ pub struct Ar
     #[arg(short,long,default_value="KB")]
     pub size : String,
     
+    #[arg(short,long,default_value="0")]
+    pub depth: u64,
+    
     #[arg(short, long)]
     pub flatpak : bool,
     
     #[arg(short,long)]
-    pub containers : bool
+    pub containers : bool,
+    
+    #[arg(short,long)]
+    pub json : bool
 }
 
 #[derive(Clone, Copy)]
